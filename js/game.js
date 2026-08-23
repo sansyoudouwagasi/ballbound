@@ -195,16 +195,6 @@ class Game {
             window.soundManager.playClick();
             this.togglePause();
         });
-
-        // サイトトップに戻るボタン
-        document.getElementById('back-to-top-btn').addEventListener('click', () => {
-            window.soundManager.playClick();
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/';
-            }
-        });
     }
 
     updateSoundIcons(isMuted) {
