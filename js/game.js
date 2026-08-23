@@ -457,7 +457,7 @@ class Game {
 
                     window.soundManager.playCarrot();
                     this.world.createCarrotSparkle(carrot.position.x, carrot.position.y, carrot.position.z);
-                    this.addFever(isGold ? 100 : 25);
+                    this.addFever(isGold ? 50 : 10);
                     this.showPopupText(`+${addPts}`, isGold ? '#ffd700' : '#ff9900');
                 }
             }
