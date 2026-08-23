@@ -326,9 +326,9 @@ class WorldManager {
         // 4種類の味（みかん・ぶどう・ピーチ・サイダー）からランダム選択
         const flavor = this.kuzuberFlavors[Math.floor(Math.random() * this.kuzuberFlavors.length)];
         
-        // くずバーの板メッシュ (縦横比 1 : 2.24)
-        const width = 0.44;
-        const height = 0.98;
+        // くずバーの縦長長方形メッシュ (幅236 x 高さ516 の縦長アイスキャンディー形状)
+        const width = 0.46;
+        const height = 1.02;
         const planeGeo = new THREE.PlaneGeometry(width, height);
         
         let mat = this.kuzuberMaterials[flavor.id];
@@ -339,8 +339,8 @@ class WorldManager {
                 map: tex,
                 color: 0xffea77,
                 emissive: 0xffaa00,
-                emissiveIntensity: 0.7,
-                shininess: 90,
+                emissiveIntensity: 0.8,
+                shininess: 100,
                 transparent: true,
                 alphaTest: 0.05,
                 side: THREE.DoubleSide
@@ -348,21 +348,21 @@ class WorldManager {
         }
         
         const mesh = new THREE.Mesh(planeGeo, mat);
-        mesh.position.y = 0.52;
+        mesh.position.y = 0.55;
         mesh.castShadow = true;
         item.add(mesh);
 
-        // ほんのり光るオーラ/氷の涼やかリングエフェクト
-        const auraGeo = new THREE.RingGeometry(0.24, 0.32, 16);
-        const auraMat = new THREE.MeshBasicMaterial({
+        // 氷の冷気・縦長長方形のほんのりバックグロー
+        const glowGeo = new THREE.PlaneGeometry(width + 0.08, height + 0.08);
+        const glowMat = new THREE.MeshBasicMaterial({
             color: isGolden ? 0xffea00 : flavor.color,
             transparent: true,
-            opacity: 0.5,
+            opacity: 0.4,
             side: THREE.DoubleSide
         });
-        const aura = new THREE.Mesh(auraGeo, auraMat);
-        aura.position.set(0, 0.52, -0.01);
-        item.add(aura);
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(0, 0.55, -0.005);
+        item.add(glow);
 
         const laneOffset = (Math.random() * 2 - 1) * (this.trackWidth * 0.35);
         const spawnZ = -(this.segmentCount * this.segmentLength * 0.9);
