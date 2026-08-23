@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>うさぎのボールバウンド！ 〜にんじんダッシュ〜</title>
+    <meta name="description" content="可愛らしいウサギがピョンピョン走る！跳ねてくるボールを避けてにんじんを集める、小学生から楽しめる3Dスマホランゲーム。">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css?v=15">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- ゲーム画面全体を包むスマホコンテナ（上下30px余白配置） -->
+    <div id="game-wrapper">
+        <main id="game-container">
+            <!-- 3Dレンダリング用Three.jsキャンバスコンテナ -->
+            <div id="game-canvas-container"></div>
+
+            <!-- ==============================
+                 1. オープニング / タイトル画面
+            =============================== -->
+            <section id="title-screen" class="overlay-screen">
+                <div class="title-bg-image" style="background-image: url('assets/opening_bg.jpg');"></div>
+                <div class="title-content">
+                    <!-- サウンドトグルボタン -->
+                    <div class="top-nav-bar">
+                        <button id="sound-toggle-btn" class="icon-circle-btn" aria-label="サウンド切り替え">🔊</button>
+                    </div>
+
+                    <!-- タイトルロゴバナー -->
+                    <div class="logo-container">
+                        <div class="logo-badge">3Dアクション</div>
+                        <h1 class="game-title">
+                            <span class="title-sub">うさぎの</span>
+                            <span class="title-main">ボールバウンド！</span>
+                            <span class="title-catch">〜にんじんダッシュ〜</span>
+                        </h1>
+                    </div>
+
+                    <!-- ハイスコアバッジ -->
+                    <div class="highscore-badge">
+                        <span class="hs-icon">👑</span> ベストスコア: <span id="title-highscore">0</span>
+                    </div>
+
+                    <!-- メインメニューボタン群 -->
+                    <div class="menu-btn-group">
+                        <button id="start-btn" class="primary-game-btn pulse-anim">
+                            <span class="btn-icon">🐰</span> あそぶ！
+                        </button>
+                        <button id="how-to-btn" class="secondary-game-btn">
+                            <span class="btn-icon">📖</span> あそびかた
+                        </button>
+                        <!-- サイトトップにもどるボタン -->
+                        <button id="back-to-top-btn" class="tertiary-game-btn">
+                            <span class="btn-icon">🏠</span> サイトトップにもどる
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==============================
+                 2. プレイ中 HUD (UI)
+            =============================== -->
+            <section id="hud-screen" class="overlay-screen hidden">
+                <div class="hud-top-container">
+                    <div class="hud-top-bar">
+                        <!-- スコア -->
+                        <div class="hud-stat-box score-box">
+                            <div class="stat-label">スコア</div>
+                            <div id="hud-score" class="stat-value">0</div>
+                        </div>
+                        <!-- にんじんカウント -->
+                        <div class="hud-stat-box carrot-box">
+                            <div class="stat-label">🥕 にんじん</div>
+                            <div id="hud-carrots" class="stat-value">0</div>
+                        </div>
+                        <!-- 走行距離 -->
+                        <div class="hud-stat-box dist-box">
+                            <div class="stat-label">きょり</div>
+                            <div id="hud-dist" class="stat-value">0m</div>
+                        </div>
+                        <!-- コントロールボタン -->
+                        <div class="hud-controls">
+                            <button id="hud-sound-toggle-btn" class="icon-circle-btn sm" aria-label="サウンド切り替え">🔊</button>
+                            <button id="pause-btn" class="icon-circle-btn sm" aria-label="一時停止">⏸</button>
+                        </div>
+                    </div>
+
+                    <!-- フィーバーゲージ（トップバー直下にコンパクト配置） -->
+                    <div class="fever-gauge-container">
+                        <div class="fever-bar-header">
+                            <span class="fever-label">✨ SUPER FEVER ✨</span>
+                        </div>
+                        <div class="fever-bar-bg">
+                            <div id="fever-bar-fill" class="fever-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作ヒント -->
+                <div class="swipe-hint">
+                    <span>👈 なぞって うさぎを うごかそう 👉</span>
+                </div>
+            </section>
+
+            <!-- ==============================
+                 3. ゲームオーバー / リザルト画面
+            =============================== -->
+            <section id="gameover-screen" class="overlay-screen hidden">
+                <div class="modal-card gameover-card">
+                    <div class="gameover-header">
+                        <div class="squish-emoji">💥🐰💥</div>
+                        <h2 class="gameover-title">ペチャッ！</h2>
+                        <p class="gameover-subtitle">ボールにぶつかっちゃった！</p>
+                    </div>
+
+                    <div id="new-record-badge" class="new-record-banner hidden">
+                        🎉 NEW RECORD! 🎉
+                    </div>
+
+                    <!-- リザルトスコアボード -->
+                    <div class="result-scoreboard">
+                        <div class="result-row">
+                            <span>今回のスコア</span>
+                            <strong id="gameover-score" class="highlight-val">0</strong>
+                        </div>
+                        <div class="result-row">
+                            <span>走ったきょり</span>
+                            <span id="gameover-dist">0m</span>
+                        </div>
+                        <div class="result-row">
+                            <span>集めたにんじん</span>
+                            <span>🥕 <span id="gameover-carrots">0</span> こ</span>
+                        </div>
+                        <div class="result-row highscore-row">
+                            <span>👑 歴代ベスト</span>
+                            <strong id="gameover-high">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <button id="retry-btn" class="primary-game-btn">
+                            <span class="btn-icon">🔁</span> もう一回あそぶ
+                        </button>
+                        <button id="title-btn" class="secondary-game-btn">
+                            <span class="btn-icon">🏠</span> タイトルへ
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==============================
+                 4. 一時停止 モーダル
+            =============================== -->
+            <div id="pause-modal" class="modal-backdrop hidden">
+                <div class="modal-card pause-card">
+                    <h2>⏸ ポーズ中</h2>
+                    <p>ひとやすみ中だよ</p>
+                    <div class="modal-actions">
+                        <button id="resume-btn" class="primary-game-btn">
+                            ▶ つづける
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==============================
+                 5. あそびかた モーダル
+            =============================== -->
+            <div id="how-to-modal" class="modal-backdrop hidden">
+                <div class="modal-card how-to-card">
+                    <div class="modal-header">
+                        <h2>📖 あそびかた</h2>
+                    </div>
+                    <div class="how-to-content">
+                        <div class="instruction-item">
+                            <div class="inst-icon">👆</div>
+                            <div class="inst-text">
+                                <strong>ゆびで左右になぞろう！</strong>
+                                <p>画面をスワイプすると、ウサギが左右にピョンピョン走るよ。</p>
+                            </div>
+                        </div>
+                        <div class="instruction-item">
+                            <div class="inst-icon">⚽</div>
+                            <div class="inst-text">
+                                <strong>跳ねてくるボールをよけよう！</strong>
+                                <p>大小さまざまなボールが奥からやってくるよ。当たるとペシャンコになっちゃう！</p>
+                            </div>
+                        </div>
+                        <div class="instruction-item">
+                            <div class="inst-icon">🥕</div>
+                            <div class="inst-text">
+                                <strong>にんじんを集めてフィーバー！</strong>
+                                <p>にんじんを取ってゲージが満タンになると、巨大化＆虹色無敵でボールを吹き飛ばせるぞ！</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="close-how-to-btn" class="primary-game-btn full-width">
+                        わかった！
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ゲームスクリプト（キャッシュバスティング付与） -->
+    <script src="js/audio.js?v=15"></script>
+    <script src="js/rabbit.js?v=15"></script>
+    <script src="js/world.js?v=15"></script>
+    <script src="js/game.js?v=15"></script>
+</body>
+</html>
