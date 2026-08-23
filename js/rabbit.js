@@ -102,12 +102,6 @@ class RabbitCharacter {
         this.rightEar.castShadow = true;
         this.rightEarPivot.add(this.rightEar);
 
-        // 耳の後ろの可愛いピンクのリボン
-        const ribbonGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const ribbon = new THREE.Mesh(ribbonGeo, this.ribbonMaterial);
-        ribbon.position.set(0, 0.38, 0.22);
-        this.head.add(ribbon);
-
         // --- 5. お顔（奥側 Z マイナス） ---
         const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
         this.leftEye = new THREE.Mesh(eyeGeo, this.eyeMaterial);
