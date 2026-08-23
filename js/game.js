@@ -452,13 +452,17 @@ class Game {
 
                     this.carrots += 1;
                     const isGold = carrot.userData.isGolden;
+                    const flavor = carrot.userData.flavor || { name: 'くずバー', color: 0xffaa00, cssColor: '#ffaa00' };
                     const addPts = isGold ? 500 : 100;
                     this.score += addPts;
 
                     window.soundManager.playCarrot();
-                    this.world.createCarrotSparkle(carrot.position.x, carrot.position.y, carrot.position.z);
+                    this.world.createCarrotSparkle(carrot.position.x, carrot.position.y, carrot.position.z, isGold ? 0xffea00 : flavor.color);
                     this.addFever(isGold ? 50 : 10);
-                    this.showPopupText(`+${addPts}`, isGold ? '#ffd700' : '#ff9900');
+                    
+                    const popupLabel = isGold ? `✨GOLD! +${addPts}` : `+${addPts} ${flavor.name}`;
+                    const popupColor = isGold ? '#ffd700' : flavor.cssColor;
+                    this.showPopupText(popupLabel, popupColor);
                 }
             }
 

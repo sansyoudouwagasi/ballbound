@@ -96,14 +96,24 @@ class WorldManager {
             roughness: 0.7 
         });
 
-        // にんじんマテリアル
-        this.carrotOrangeMat = new THREE.MeshLambertMaterial({ color: 0xff7700 });
-        this.carrotGreenMat = new THREE.MeshLambertMaterial({ color: 0x33cc33 });
-        this.goldenCarrotMat = new THREE.MeshPhongMaterial({ 
-            color: 0xffd700, 
-            emissive: 0xffaa00, 
-            emissiveIntensity: 0.6,
-            shininess: 90 
+        // くずバー（みかん、ぶどう、ピーチ、サイダー）定義 & テクスチャ初期化
+        const textureLoader = new THREE.TextureLoader();
+        this.kuzuberFlavors = [
+            { id: 'mikan', name: 'みかん', file: 'assets/kuzuber_mikan.png', color: 0xff7700, cssColor: '#ff7700' },
+            { id: 'grape', name: 'ぶどう', file: 'assets/kuzuber_grape.png', color: 0x9d4edd, cssColor: '#9d4edd' },
+            { id: 'peach', name: 'ピーチ', file: 'assets/kuzuber_peach.png', color: 0xff6b8b, cssColor: '#ff6b8b' },
+            { id: 'cider', name: 'サイダー', file: 'assets/kuzuber_cider.png', color: 0x00b4d8, cssColor: '#00b4d8' }
+        ];
+
+        this.kuzuberMaterials = {};
+        this.kuzuberFlavors.forEach(f => {
+            const tex = textureLoader.load(f.file);
+            this.kuzuberMaterials[f.id] = new THREE.MeshLambertMaterial({
+                map: tex,
+                transparent: true,
+                alphaTest: 0.05,
+                side: THREE.DoubleSide
+            });
         });
 
         // 多彩なポップカラーのバウンドボール用マテリアル
@@ -309,43 +319,65 @@ class WorldManager {
         }
     }
 
-    // --- にんじん生成 ---
+    // --- くずバー（アイテム）生成 ---
     spawnCarrot(isGolden = false) {
-        const carrot = new THREE.Group();
+        const item = new THREE.Group();
         
-        // にんじんの体（円錐）
-        const bodyGeo = new THREE.ConeGeometry(0.22, 0.8, 8);
-        bodyGeo.rotateX(Math.PI); // 尖った方を下に
-        const mat = isGolden ? this.goldenCarrotMat : this.carrotOrangeMat;
-        const body = new THREE.Mesh(bodyGeo, mat);
-        body.position.y = 0.4;
-        body.castShadow = true;
-        carrot.add(body);
-
-        // にんじんの葉っぱ（緑の冠）
-        const leafGeo = new THREE.ConeGeometry(0.12, 0.35, 6);
-        const leafMat = this.carrotGreenMat;
-        for (let l = 0; l < 3; l++) {
-            const leaf = new THREE.Mesh(leafGeo, leafMat);
-            leaf.position.set((Math.random() - 0.5) * 0.08, 0.85, (Math.random() - 0.5) * 0.08);
-            leaf.rotation.z = (l - 1) * 0.3;
-            leaf.castShadow = true;
-            carrot.add(leaf);
+        // 4種類の味（みかん・ぶどう・ピーチ・サイダー）からランダム選択
+        const flavor = this.kuzuberFlavors[Math.floor(Math.random() * this.kuzuberFlavors.length)];
+        
+        // くずバーの板メッシュ (縦横比 1 : 2.24)
+        const width = 0.44;
+        const height = 0.98;
+        const planeGeo = new THREE.PlaneGeometry(width, height);
+        
+        let mat = this.kuzuberMaterials[flavor.id];
+        if (isGolden) {
+            // ゴールデンくずバー：金の輝き
+            const tex = this.kuzuberMaterials[flavor.id].map;
+            mat = new THREE.MeshPhongMaterial({
+                map: tex,
+                color: 0xffea77,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0.7,
+                shininess: 90,
+                transparent: true,
+                alphaTest: 0.05,
+                side: THREE.DoubleSide
+            });
         }
+        
+        const mesh = new THREE.Mesh(planeGeo, mat);
+        mesh.position.y = 0.52;
+        mesh.castShadow = true;
+        item.add(mesh);
+
+        // ほんのり光るオーラ/氷の涼やかリングエフェクト
+        const auraGeo = new THREE.RingGeometry(0.24, 0.32, 16);
+        const auraMat = new THREE.MeshBasicMaterial({
+            color: isGolden ? 0xffea00 : flavor.color,
+            transparent: true,
+            opacity: 0.5,
+            side: THREE.DoubleSide
+        });
+        const aura = new THREE.Mesh(auraGeo, auraMat);
+        aura.position.set(0, 0.52, -0.01);
+        item.add(aura);
 
         const laneOffset = (Math.random() * 2 - 1) * (this.trackWidth * 0.35);
         const spawnZ = -(this.segmentCount * this.segmentLength * 0.9);
 
-        carrot.userData = {
+        item.userData = {
             isGolden: isGolden,
+            flavor: flavor,
             laneOffset: laneOffset,
             z: spawnZ,
             active: true,
-            rotSpeed: Math.random() * 2 + 2
+            rotSpeed: Math.random() * 1.5 + 2.0
         };
 
-        this.carrotGroup.add(carrot);
-        this.carrots.push(carrot);
+        this.carrotGroup.add(item);
+        this.carrots.push(item);
     }
 
     // --- ボール障害物生成 ---
@@ -460,10 +492,10 @@ class WorldManager {
         }
     }
 
-    // にんじん取得時のキラキラエフェクト
-    createCarrotSparkle(x, y, z) {
-        this.createExplosion(x, y, z, 0xffaa00, 10);
-        this.createExplosion(x, y + 0.3, z, 0xffff44, 8);
+    // くずバー取得時のキラキラエフェクト（味ごとのテーマカラー対応）
+    createCarrotSparkle(x, y, z, color = 0xffaa00) {
+        this.createExplosion(x, y + 0.3, z, color, 12);
+        this.createExplosion(x, y + 0.5, z, 0xffffff, 8);
     }
 
     // リセット
@@ -595,6 +627,8 @@ class WorldManager {
             u.bouncePhase += delta * u.bounceFreq * 2.2;
             const bounceY = Math.abs(Math.sin(u.bouncePhase)) * u.bounceHeight + u.radius;
 
+            const curve = this.getTrackCurve(u.z);
+
             // バウンド時のサウンド & 着地エフェクト
             if (Math.abs(Math.sin(u.bouncePhase)) < 0.12 && u.z > -35 && u.z < 5) {
                 if (!u.wasGrounded) {
@@ -608,7 +642,6 @@ class WorldManager {
                 u.wasGrounded = false;
             }
 
-            const curve = this.getTrackCurve(u.z);
             ball.position.set(curve.x + u.laneOffset, curve.y + bounceY, u.z);
 
             // 手前に向かって転がる回転
